@@ -14,6 +14,8 @@ type Task struct {
 	Repeat  string `json:"repeat"`
 }
 
+const timeFormat = "20060102"
+
 func AddTask(task *Task) (int64, error) {
 	var id int64
 	query := `INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)`
@@ -109,7 +111,7 @@ func Tasks(limit int, search string) ([]*Task, error) {
 		rows, err = db.Query(query, limit)
 	case isDate(search):
 		time, _ := time.Parse("02.01.2006", search)
-		date := time.Format("20060102")
+		date := time.Format(timeFormat)
 		query := `SELECT id, date, title, comment, repeat FROM scheduler WHERE date = ? LIMIT ?`
 		rows, err = db.Query(query, date, limit)
 	default:

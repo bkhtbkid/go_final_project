@@ -5,15 +5,17 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
-	"os"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 var jwtSercet = []byte("secret_key")
+
 var req struct {
 	Password string `json:"password"`
 }
+
+var todoPassword string
 
 func passwordHash(pass string) string {
 	sum := sha256.Sum256([]byte(pass))
@@ -22,33 +24,30 @@ func passwordHash(pass string) string {
 
 func signinHandler(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJson(w, map[string]string{"error": "ошибка десериализации JSON"})
+		writeJson(w, http.StatusBadRequest, map[string]string{"error": "ошибка десериализации JSON"})
 		return
 	}
 
-	pass := os.Getenv("TODO_PASSWORD")
-
-	if req.Password != pass {
-		writeJson(w, map[string]string{"error": "Неверный пароль"})
+	if req.Password != todoPassword {
+		writeJson(w, http.StatusBadRequest, map[string]string{"error": "Неверный пароль"})
 		return
 	}
 
-	claims := jwt.MapClaims{"hash": passwordHash(pass)}
+	claims := jwt.MapClaims{"hash": passwordHash(todoPassword)}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	signed, err := token.SignedString(jwtSercet)
 	if err != nil {
-		writeJson(w, map[string]string{"error": "не удалось сформировать токен"})
+		writeJson(w, http.StatusBadRequest, map[string]string{"error": "не удалось сформировать токен"})
 		return
 	}
 
-	writeJson(w, map[string]string{"token": signed})
+	writeJson(w, http.StatusOK, map[string]string{"token": signed})
 }
 
 func auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		pass := os.Getenv("TODO_PASSWORD")
-		if len(pass) > 0 {
+		if len(todoPassword) > 0 {
 			var tokenStr string
 			if cookie, err := r.Cookie("token"); err != nil {
 				tokenStr = cookie.Value
@@ -61,7 +60,7 @@ func auth(next http.HandlerFunc) http.HandlerFunc {
 			})
 			if err == nil && token.Valid {
 				if claims, ok := token.Claims.(jwt.MapClaims); ok {
-					if claims["hash"] == passwordHash(pass) {
+					if claims["hash"] == passwordHash(todoPassword) {
 						valid = true
 					}
 				}

@@ -14,9 +14,9 @@ func tasksHandler(w http.ResponseWriter, r *http.Request) {
 	search := r.URL.Query().Get("search")
 	tasks, err := db.Tasks(50, search)
 	if err != nil {
-		writeJson(w, map[string]string{"error": err.Error()})
+		writeJson(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
 
-	writeJson(w, TaskResponse{Tasks: tasks})
+	writeJson(w, http.StatusOK, TaskResponse{Tasks: tasks})
 }
