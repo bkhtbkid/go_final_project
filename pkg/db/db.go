@@ -44,3 +44,7 @@ func Init(dbFile string) error {
 func GetDB() *sql.DB {
 	return db
 }
+
+func CloseDB() error {
+	return db.Close()
+}

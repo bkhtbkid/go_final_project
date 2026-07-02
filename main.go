@@ -23,6 +23,7 @@ func main() {
 	dbFile := os.Getenv("TODO_DBFILE")
 
 	err := db.Init(dbFile)
+	defer db.CloseDB()
 	if err != nil {
 		log.Fatal("Error init db", err)
 	}
@@ -34,6 +35,8 @@ func main() {
 
 	err = http.ListenAndServe(":"+port, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		db.CloseDB()
+		os.Exit(1)
 	}
 }
